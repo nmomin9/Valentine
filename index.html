@@ -54,12 +54,15 @@
       background: rgba(255, 255, 255, 0.86);
       border-radius: 22px;
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
-      padding: 34px 22px 40px;
+      padding: 34px 22px 28px;
       text-align: center;
-      max-width: 440px;
+      max-width: 460px;
       width: 100%;
       border: 1px solid rgba(214, 77, 121, 0.12);
       backdrop-filter: blur(6px);
+      max-height: calc(100vh - 40px);
+      overflow: auto; /* allows gallery scroll on smaller phones */
+      -webkit-overflow-scrolling: touch;
     }
 
     h1 {
@@ -81,6 +84,7 @@
       gap: 18px;
       align-items: center;
       position: relative;
+      margin-bottom: 10px;
     }
 
     button {
@@ -93,7 +97,7 @@
       min-width: 96px;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-      opacity: 1; /* ensure no fading */
+      opacity: 1;
     }
     button:active { transform: scale(0.95); }
 
@@ -104,12 +108,12 @@
     }
     .yes:hover { background-color: #ff4f7d; }
 
-    /* ✅ No starts aligned next to Yes */
+    /* No starts aligned next to Yes */
     .no {
       background-color: #f6a6b2;
       color: #fff;
       box-shadow: 0 8px 18px rgba(246, 166, 178, 0.28);
-      position: relative; /* start in the flex row */
+      position: relative;
       z-index: 3;
       left: auto;
       top: auto;
@@ -118,18 +122,94 @@
     }
     .no:hover { background-color: #f49bad; }
 
+    .sparkles {
+      margin-top: 12px;
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
     .response {
-      margin-top: 26px;
-      font-size: 1.25rem;
+      margin-top: 18px;
+      font-size: 1.18rem;
       color: #d64d79;
       font-weight: 650;
       line-height: 1.5;
     }
 
-    .sparkles {
-      margin-top: 14px;
-      font-size: 1.2rem;
-      opacity: 0.9;
+    /* Gallery (hidden until Yes) */
+    .hidden { display: none; }
+
+    .gallery-wrap {
+      margin-top: 16px;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    .gallery-title {
+      margin: 10px 0 12px;
+      font-size: 1.05rem;
+      color: rgba(214, 77, 121, 0.95);
+      font-weight: 650;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .gallery img {
+      width: 100%;
+      aspect-ratio: 1 / 1;        /* perfect for square/portrait-ish pics */
+      object-fit: cover;
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(214, 77, 121, 0.22);
+      border: 1px solid rgba(214, 77, 121, 0.10);
+      cursor: pointer;
+      background: rgba(255,255,255,0.4);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 9999;
+    }
+    .lightbox.open { display: flex; }
+
+    .lightbox img {
+      max-width: min(92vw, 700px);
+      max-height: 86vh;
+      border-radius: 18px;
+      object-fit: contain;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .lightbox-hint {
+      position: absolute;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: rgba(255,255,255,0.85);
+      font-size: 0.95rem;
+    }
+
+    @media (min-width: 760px) {
+      .gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .container { max-width: 720px; }
+      .response { font-size: 1.22rem; }
     }
 
     @media (max-width: 480px) {
@@ -154,6 +234,23 @@
 
     <div class="sparkles" aria-hidden="true">💖✨💘</div>
     <div id="response" class="response" aria-live="polite"></div>
+
+    <!-- Hidden gallery revealed after Yes -->
+    <div id="galleryWrap" class="gallery-wrap hidden">
+      <div class="gallery-title">Us 💗</div>
+      <div class="gallery" id="photoGallery">
+        <img src="image1.jpg" alt="Us 1" loading="lazy" />
+        <img src="image2.jpg" alt="Us 2" loading="lazy" />
+        <img src="image3.jpg" alt="Us 3" loading="lazy" />
+        <img src="image4.jpg" alt="Us 4" loading="lazy" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox overlay -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <img id="lightboxImg" alt="Photo" />
+    <div class="lightbox-hint">Tap anywhere to close</div>
   </div>
 
   <script>
@@ -182,7 +279,7 @@
         heartsWrap.appendChild(h);
       }
 
-      // --- No button movement across entire viewport (never off-screen) ---
+      // --- No button chase across entire viewport (never off-screen) ---
       const SAFE_PAD = 18;
 
       function clamp(n, min, max) {
@@ -192,7 +289,7 @@
       let noIsFloating = false;
 
       function moveNo() {
-        // ✅ On first interaction, promote to fixed at the exact current spot (no jump)
+        // Promote to fixed at the exact current location (no jump)
         if (!noIsFloating) {
           const rect = noBtn.getBoundingClientRect();
           noBtn.style.position = "fixed";
@@ -214,10 +311,7 @@
         noBtn.style.top = `${clamp(y, SAFE_PAD, maxY)}px`;
       }
 
-      // Desktop hover
       noBtn.addEventListener("mouseover", moveNo);
-
-      // iPhone Safari/Chrome: touch
       noBtn.addEventListener(
         "touchstart",
         (e) => {
@@ -226,18 +320,16 @@
         },
         { passive: false }
       );
-
-      // Fallback click
       noBtn.addEventListener("click", (e) => {
         e.preventDefault();
         moveNo();
       });
 
-      // Keep it visible after orientation change / resize (only if already floating)
       window.addEventListener("resize", () => {
         if (noIsFloating) moveNo();
       });
 
+      // --- Yes click: show message + gallery ---
       yesBtn.addEventListener("click", () => {
         response.innerHTML =
           "Thank you very much for choosing yes, Khushnud!<br> I love you so much!<br><br>" +
@@ -245,6 +337,34 @@
 
         yesBtn.disabled = true;
         noBtn.style.display = "none";
+
+        document.getElementById("galleryWrap").classList.remove("hidden");
+      });
+
+      // --- Lightbox (tap to open/close) ---
+      const lightbox = document.getElementById("lightbox");
+      const lightboxImg = document.getElementById("lightboxImg");
+      const gallery = document.getElementById("photoGallery");
+
+      gallery.addEventListener("click", (e) => {
+        const target = e.target;
+        if (target && target.tagName === "IMG") {
+          lightboxImg.src = target.getAttribute("src");
+          lightbox.classList.add("open");
+          lightbox.setAttribute("aria-hidden", "false");
+        }
+      });
+
+      function closeLightbox() {
+        lightbox.classList.remove("open");
+        lightbox.setAttribute("aria-hidden", "true");
+        lightboxImg.src = "";
+      }
+
+      lightbox.addEventListener("click", closeLightbox);
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeLightbox();
       });
     });
   </script>
