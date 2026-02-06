@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Will you be my Valentine?</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #fff0f5, #ffe6f2, #ffdde8, #ffe9f1);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 22px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      padding: 32px 22px 40px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      margin-bottom: 26px;
+      color: #d64d79;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      position: relative;
+    }
+
+    button {
+      padding: 14px 26px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.25s ease;
+      min-width: 90px;
+      user-select: none;
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    .yes {
+      background-color: #ff6f91;
+      color: white;
+    }
+
+    .yes:hover {
+      background-color: #ff4f7d;
+    }
+
+    .no {
+      background-color: #f6a6b2;
+      color: white;
+      position: relative;
+    }
+
+    .response {
+      margin-top: 28px;
+      font-size: 1.25rem;
+      color: #d64d79;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      button {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Will you be my Valentine?</h1>
+
+    <div class="buttons">
+      <button id="yesBtn" class="yes">Yes</button>
+      <button id="noBtn" class="no">No</button>
+    </div>
+
+    <div id="response" class="response"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const yesBtn = document.getElementById("yesBtn");
+      const noBtn = document.getElementById("noBtn");
+      const response = document.getElementById("response");
+      const container = document.querySelector(".container");
+
+      function moveNo() {
+        noBtn.style.position = "absolute";
+
+        const containerRect = container.getBoundingClientRect();
+        const btnRect = noBtn.getBoundingClientRect();
+
+        const maxX = containerRect.width - btnRect.width;
+        const maxY = containerRect.height - btnRect.height;
+
+        const x = Math.random() * maxX;
+        const y = Math.random() * maxY;
+
+        noBtn.style.left = `${x}px`;
+        noBtn.style.top = `${y}px`;
+      }
+
+      // Desktop hover
+      noBtn.addEventListener("mouseover", moveNo);
+
+      // iPhone Safari & Chrome
+      noBtn.addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          moveNo();
+        },
+        { passive: false }
+      );
+
+      noBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        moveNo();
+      });
+
+      yesBtn.addEventListener("click", () => {
+        response.innerHTML =
+          "Thank you very much for choosing yes, Khushnud! I Love you!<br><br>" +
+          "Join me for your favorite cuisine at 7:30 … or I can bring it to you :)";
+
+        yesBtn.disabled = true;
+        noBtn.style.display = "none";
+      });
+    });
+  </script>
+</body>
+</html>
