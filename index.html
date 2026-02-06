@@ -25,7 +25,7 @@
       position: relative;
     }
 
-    /* Floating hearts */
+    /* Decorative floating hearts */
     .hearts {
       position: absolute;
       inset: 0;
@@ -47,7 +47,7 @@
       100% { transform: translateY(-20vh) translateX(40px) rotate(25deg); opacity: 0; }
     }
 
-    /* Card */
+    /* Center card */
     .container {
       position: relative;
       z-index: 2;
@@ -108,12 +108,12 @@
     }
     .yes:hover { background-color: #ff4f7d; }
 
-    /* ✅ IMPORTANT: No starts in the row */
+    /* ✅ IMPORTANT: No starts aligned next to Yes (in the flex row) */
     .no {
       background-color: #f6a6b2;
       color: #fff;
       box-shadow: 0 8px 18px rgba(246, 166, 178, 0.28);
-      position: relative;     /* START in flex row */
+      position: relative;   /* starts in-row */
       z-index: 3;
       left: auto;
       top: auto;
@@ -130,6 +130,7 @@
       line-height: 1.5;
     }
 
+    /* Gallery (hidden until Yes) */
     .gallery-wrap {
       margin-top: 16px;
       animation: fadeIn 0.8s ease forwards;
@@ -210,7 +211,7 @@
       const response = document.getElementById("response");
       const card = document.querySelector(".container");
 
-      // Hearts
+      // --- Floating hearts ---
       const heartsWrap = document.getElementById("hearts");
       const heartEmojis = ["💗","💖","💘","💕","💓","❤️"];
       for (let i = 0; i < 18; i++) {
@@ -228,6 +229,20 @@
         return Math.max(min, Math.min(max, n));
       }
 
+      // ✅ iPhone Safari/Chrome: true visible viewport (prevents "off screen" moves)
+      function getViewport() {
+        const vv = window.visualViewport;
+        if (vv) {
+          return {
+            left: vv.offsetLeft,
+            top: vv.offsetTop,
+            width: vv.width,
+            height: vv.height
+          };
+        }
+        return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+      }
+
       let noIsFloating = false;
 
       function moveNo() {
@@ -242,29 +257,37 @@
           noIsFloating = true;
         }
 
+        const vp = getViewport();
         const cardRect = card.getBoundingClientRect();
         const btnRect = noBtn.getBoundingClientRect();
 
-        // ✅ Tight playful roaming box around the card
+        // Roam box around the card (playful but not disappearing)
         const PAD_X = 90;
         const PAD_Y = 140;
 
-        // ✅ Keep inside viewport too
-        const VIEW_PAD = 14;
+        // Keep away from edges + iPhone bars
+        const EDGE_PAD = 16;
 
         let minX = cardRect.left - PAD_X;
         let maxX = cardRect.right + PAD_X - btnRect.width;
         let minY = cardRect.top - PAD_Y;
         let maxY = cardRect.bottom + PAD_Y - btnRect.height;
 
-        minX = clamp(minX, VIEW_PAD, window.innerWidth - btnRect.width - VIEW_PAD);
-        maxX = clamp(maxX, VIEW_PAD, window.innerWidth - btnRect.width - VIEW_PAD);
-        minY = clamp(minY, VIEW_PAD, window.innerHeight - btnRect.height - VIEW_PAD);
-        maxY = clamp(maxY, VIEW_PAD, window.innerHeight - btnRect.height - VIEW_PAD);
+        // Visible viewport bounds (VisualViewport)
+        const vpMinX = vp.left + EDGE_PAD;
+        const vpMaxX = vp.left + vp.width - btnRect.width - EDGE_PAD;
+        const vpMinY = vp.top + EDGE_PAD;
+        const vpMaxY = vp.top + vp.height - btnRect.height - EDGE_PAD;
 
-        // Safety if bounds collapse (tiny screens)
-        if (maxX <= minX) { minX = VIEW_PAD; maxX = window.innerWidth - btnRect.width - VIEW_PAD; }
-        if (maxY <= minY) { minY = VIEW_PAD; maxY = window.innerHeight - btnRect.height - VIEW_PAD; }
+        // Intersect roaming box with visible viewport
+        minX = clamp(minX, vpMinX, vpMaxX);
+        maxX = clamp(maxX, vpMinX, vpMaxX);
+        minY = clamp(minY, vpMinY, vpMaxY);
+        maxY = clamp(maxY, vpMinY, vpMaxY);
+
+        // Fallback if bounds collapse on tiny screens
+        if (maxX <= minX) { minX = vpMinX; maxX = vpMaxX; }
+        if (maxY <= minY) { minY = vpMinY; maxY = vpMaxY; }
 
         const x = minX + Math.random() * (maxX - minX);
         const y = minY + Math.random() * (maxY - minY);
@@ -273,16 +296,24 @@
         noBtn.style.top = `${y}px`;
       }
 
-      // Triggers
+      // Desktop hover + Mobile touch
       noBtn.addEventListener("mouseover", moveNo);
       noBtn.addEventListener("click", (e) => { e.preventDefault(); moveNo(); });
       noBtn.addEventListener("touchstart", (e) => { e.preventDefault(); moveNo(); }, { passive: false });
 
+      // If Safari UI changes (address bar collapse/expand), keep No visible
       window.addEventListener("resize", () => {
         if (noIsFloating) moveNo();
       });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", () => {
+          if (noIsFloating) moveNo();
+        });
+        window.visualViewport.addEventListener("scroll", () => {
+          if (noIsFloating) moveNo();
+        });
+      }
 
-      // Yes click: message + gallery
       yesBtn.addEventListener("click", () => {
         response.innerHTML =
           "Thank you very much for choosing yes, Khushnud!<br>I love you so much!<br><br>" +
