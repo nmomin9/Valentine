@@ -25,7 +25,7 @@
       position: relative;
     }
 
-    /* Decorative floating hearts */
+    /* Floating hearts */
     .hearts {
       position: absolute;
       inset: 0;
@@ -47,7 +47,7 @@
       100% { transform: translateY(-20vh) translateX(40px) rotate(25deg); opacity: 0; }
     }
 
-    /* Center card */
+    /* Card */
     .container {
       position: relative;
       z-index: 2;
@@ -98,6 +98,7 @@
       user-select: none;
       -webkit-tap-highlight-color: transparent;
       opacity: 1;
+      touch-action: manipulation; /* prevents extra delay/double events on iOS */
     }
     button:active { transform: scale(0.95); }
 
@@ -108,17 +109,18 @@
     }
     .yes:hover { background-color: #ff4f7d; }
 
-    /* ✅ IMPORTANT: No starts aligned next to Yes (in the flex row) */
+    /* ✅ Starts aligned next to Yes */
     .no {
       background-color: #f6a6b2;
       color: #fff;
       box-shadow: 0 8px 18px rgba(246, 166, 178, 0.28);
-      position: relative;   /* starts in-row */
+      position: relative;
       z-index: 3;
       left: auto;
       top: auto;
       transform: none;
       opacity: 1;
+      will-change: left, top;
     }
     .no:hover { background-color: #f49bad; }
 
@@ -130,7 +132,6 @@
       line-height: 1.5;
     }
 
-    /* Gallery (hidden until Yes) */
     .gallery-wrap {
       margin-top: 16px;
       animation: fadeIn 0.8s ease forwards;
@@ -211,7 +212,7 @@
       const response = document.getElementById("response");
       const card = document.querySelector(".container");
 
-      // --- Floating hearts ---
+      // Floating hearts (lightweight)
       const heartsWrap = document.getElementById("hearts");
       const heartEmojis = ["💗","💖","💘","💕","💓","❤️"];
       for (let i = 0; i < 18; i++) {
@@ -229,8 +230,8 @@
         return Math.max(min, Math.min(max, n));
       }
 
-      // ✅ iPhone Safari/Chrome: true visible viewport (prevents "off screen" moves)
-      function getViewport() {
+      // ✅ Use VisualViewport for iPhone "visible screen" bounds
+      function getVisibleViewport() {
         const vv = window.visualViewport;
         if (vv) {
           return {
@@ -244,48 +245,57 @@
       }
 
       let noIsFloating = false;
+      let lastMoveTs = 0;
+
+      function promoteNoToFixedIfNeeded() {
+        if (noIsFloating) return;
+        const rect = noBtn.getBoundingClientRect();
+        noBtn.style.position = "fixed";
+        noBtn.style.left = `${rect.left}px`;
+        noBtn.style.top = `${rect.top}px`;
+        noBtn.style.transform = "none";
+        noBtn.style.opacity = "1";
+        noIsFloating = true;
+      }
 
       function moveNo() {
-        // Promote to fixed at exact current spot (no jump)
-        if (!noIsFloating) {
-          const rect = noBtn.getBoundingClientRect();
-          noBtn.style.position = "fixed";
-          noBtn.style.left = `${rect.left}px`;
-          noBtn.style.top = `${rect.top}px`;
-          noBtn.style.transform = "none";
-          noBtn.style.opacity = "1";
-          noIsFloating = true;
-        }
+        // Throttle moves so it doesn't "spasm" on iOS
+        const now = Date.now();
+        if (now - lastMoveTs < 160) return; // ~6 moves/sec max
+        lastMoveTs = now;
 
-        const vp = getViewport();
+        promoteNoToFixedIfNeeded();
+
+        const vp = getVisibleViewport();
         const cardRect = card.getBoundingClientRect();
         const btnRect = noBtn.getBoundingClientRect();
 
-        // Roam box around the card (playful but not disappearing)
-        const PAD_X = 90;
-        const PAD_Y = 140;
+        // ✅ VERY tight movement around the white card
+        const PAD_X = 35;  // tighter left/right
+        const PAD_Y = 55;  // tighter up/down
 
-        // Keep away from edges + iPhone bars
-        const EDGE_PAD = 16;
+        // Keep away from edges of visible viewport
+        const EDGE_PAD = 14;
 
+        // Card-centered roaming box
         let minX = cardRect.left - PAD_X;
         let maxX = cardRect.right + PAD_X - btnRect.width;
         let minY = cardRect.top - PAD_Y;
         let maxY = cardRect.bottom + PAD_Y - btnRect.height;
 
-        // Visible viewport bounds (VisualViewport)
+        // Visible viewport bounds (prevents "off screen")
         const vpMinX = vp.left + EDGE_PAD;
         const vpMaxX = vp.left + vp.width - btnRect.width - EDGE_PAD;
         const vpMinY = vp.top + EDGE_PAD;
         const vpMaxY = vp.top + vp.height - btnRect.height - EDGE_PAD;
 
-        // Intersect roaming box with visible viewport
+        // Intersect the card box with visible viewport
         minX = clamp(minX, vpMinX, vpMaxX);
         maxX = clamp(maxX, vpMinX, vpMaxX);
         minY = clamp(minY, vpMinY, vpMaxY);
         maxY = clamp(maxY, vpMinY, vpMaxY);
 
-        // Fallback if bounds collapse on tiny screens
+        // If intersection collapses (rare), fallback to viewport-safe
         if (maxX <= minX) { minX = vpMinX; maxX = vpMaxX; }
         if (maxY <= minY) { minY = vpMinY; maxY = vpMaxY; }
 
@@ -296,23 +306,26 @@
         noBtn.style.top = `${y}px`;
       }
 
-      // Desktop hover + Mobile touch
-      noBtn.addEventListener("mouseover", moveNo);
-      noBtn.addEventListener("click", (e) => { e.preventDefault(); moveNo(); });
-      noBtn.addEventListener("touchstart", (e) => { e.preventDefault(); moveNo(); }, { passive: false });
-
-      // If Safari UI changes (address bar collapse/expand), keep No visible
-      window.addEventListener("resize", () => {
-        if (noIsFloating) moveNo();
+      // ✅ Clean events: use pointer events (prevents touch+click double fire)
+      // Ignore multi-touch / two-finger gestures (prevents glitch)
+      noBtn.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "touch" && e.isPrimary === false) return; // ignore extra fingers
+        e.preventDefault();
+        moveNo();
       });
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", () => {
-          if (noIsFloating) moveNo();
-        });
-        window.visualViewport.addEventListener("scroll", () => {
-          if (noIsFloating) moveNo();
-        });
-      }
+
+      noBtn.addEventListener("pointerenter", (e) => {
+        // Only for mouse/trackpad hover on desktop
+        if (e.pointerType === "mouse") moveNo();
+      });
+
+      // Keep button visible on orientation change (no spasm)
+      window.addEventListener("resize", () => {
+        if (noIsFloating) {
+          // Just nudge once (throttle already applies)
+          moveNo();
+        }
+      });
 
       yesBtn.addEventListener("click", () => {
         response.innerHTML =
