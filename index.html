@@ -74,17 +74,27 @@
 
     .sub {
       color: rgba(214, 77, 121, 0.9);
-      margin-bottom: 22px;
+      margin-bottom: 18px;
       font-size: 1.02rem;
     }
 
-    .buttons {
+    /* ✅ This becomes the "play area" inside the white card */
+    .buttons-area {
+      position: relative;
+      width: 100%;
+      height: 110px;        /* playbox height inside card */
+      margin: 8px 0 6px;
+    }
+
+    /* Initial aligned row */
+    .buttons-row {
       display: flex;
       justify-content: center;
       gap: 18px;
       align-items: center;
+      height: 100%;
       position: relative;
-      margin-bottom: 10px;
+      z-index: 1;
     }
 
     button {
@@ -97,8 +107,7 @@
       min-width: 96px;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-      opacity: 1;
-      touch-action: manipulation; /* prevents extra delay/double events on iOS */
+      touch-action: manipulation;
     }
     button:active { transform: scale(0.95); }
 
@@ -107,22 +116,21 @@
       color: #fff;
       box-shadow: 0 8px 18px rgba(255, 111, 145, 0.28);
     }
-    .yes:hover { background-color: #ff4f7d; }
 
-    /* ✅ Starts aligned next to Yes */
     .no {
       background-color: #f6a6b2;
       color: #fff;
       box-shadow: 0 8px 18px rgba(246, 166, 178, 0.28);
-      position: relative;
-      z-index: 3;
-      left: auto;
-      top: auto;
-      transform: none;
-      opacity: 1;
-      will-change: left, top;
     }
-    .no:hover { background-color: #f49bad; }
+
+    /* ✅ Once the game starts, No becomes absolute INSIDE the white card area */
+    .no.floating {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
 
     .response {
       margin-top: 18px;
@@ -170,12 +178,14 @@
       .gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .container { max-width: 720px; }
       .response { font-size: 1.22rem; }
+      .buttons-area { height: 120px; }
     }
 
     @media (max-width: 480px) {
       h1 { font-size: 1.6rem; }
       .sub { font-size: 0.98rem; }
       button { padding: 12px 20px; font-size: 0.95rem; min-width: 92px; }
+      .buttons-area { height: 105px; }
     }
   </style>
 </head>
@@ -187,9 +197,12 @@
     <h1>Will you be my Valentine?</h1>
     <div class="sub">Be honest… but good luck clicking “No” 😄</div>
 
-    <div class="buttons">
-      <button id="yesBtn" class="yes">Yes</button>
-      <button id="noBtn" class="no">No</button>
+    <!-- ✅ No will only move INSIDE this area (white card) -->
+    <div class="buttons-area" id="playArea">
+      <div class="buttons-row" id="buttonsRow">
+        <button id="yesBtn" class="yes">Yes</button>
+        <button id="noBtn" class="no">No</button>
+      </div>
     </div>
 
     <div id="response" class="response" aria-live="polite"></div>
@@ -210,9 +223,10 @@
       const yesBtn = document.getElementById("yesBtn");
       const noBtn = document.getElementById("noBtn");
       const response = document.getElementById("response");
-      const card = document.querySelector(".container");
+      const playArea = document.getElementById("playArea");
+      const buttonsRow = document.getElementById("buttonsRow");
 
-      // Floating hearts (lightweight)
+      // Hearts
       const heartsWrap = document.getElementById("hearts");
       const heartEmojis = ["💗","💖","💘","💕","💓","❤️"];
       for (let i = 0; i < 18; i++) {
@@ -226,105 +240,62 @@
         heartsWrap.appendChild(h);
       }
 
-      function clamp(n, min, max) {
-        return Math.max(min, Math.min(max, n));
-      }
-
-      // ✅ Use VisualViewport for iPhone "visible screen" bounds
-      function getVisibleViewport() {
-        const vv = window.visualViewport;
-        if (vv) {
-          return {
-            left: vv.offsetLeft,
-            top: vv.offsetTop,
-            width: vv.width,
-            height: vv.height
-          };
-        }
-        return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
-      }
-
-      let noIsFloating = false;
+      let floating = false;
       let lastMoveTs = 0;
 
-      function promoteNoToFixedIfNeeded() {
-        if (noIsFloating) return;
-        const rect = noBtn.getBoundingClientRect();
-        noBtn.style.position = "fixed";
-        noBtn.style.left = `${rect.left}px`;
-        noBtn.style.top = `${rect.top}px`;
-        noBtn.style.transform = "none";
-        noBtn.style.opacity = "1";
-        noIsFloating = true;
-      }
-
-      function moveNo() {
-        // Throttle moves so it doesn't "spasm" on iOS
+      function moveNoInsideCard() {
         const now = Date.now();
-        if (now - lastMoveTs < 160) return; // ~6 moves/sec max
+        if (now - lastMoveTs < 140) return; // smooth/throttled
         lastMoveTs = now;
 
-        promoteNoToFixedIfNeeded();
+        // On first move: convert No to absolute INSIDE playArea, keep it visible
+        if (!floating) {
+          floating = true;
 
-        const vp = getVisibleViewport();
-        const cardRect = card.getBoundingClientRect();
+          // Make playArea the positioning context
+          playArea.style.position = "relative";
+
+          // Remove row influence but keep Yes in place
+          noBtn.classList.add("floating");
+
+          // Important: keep the row there so Yes stays centered,
+          // but No is now absolutely positioned within playArea.
+        }
+
+        const areaRect = playArea.getBoundingClientRect();
+
+        // Temporarily ensure it's measurable
         const btnRect = noBtn.getBoundingClientRect();
 
-        // ✅ VERY tight movement around the white card
-        const PAD_X = 35;  // tighter left/right
-        const PAD_Y = 55;  // tighter up/down
+        // Padding from play area edges so it never clips
+        const PAD = 10;
 
-        // Keep away from edges of visible viewport
-        const EDGE_PAD = 14;
+        const maxX = areaRect.width - btnRect.width - PAD;
+        const maxY = areaRect.height - btnRect.height - PAD;
 
-        // Card-centered roaming box
-        let minX = cardRect.left - PAD_X;
-        let maxX = cardRect.right + PAD_X - btnRect.width;
-        let minY = cardRect.top - PAD_Y;
-        let maxY = cardRect.bottom + PAD_Y - btnRect.height;
-
-        // Visible viewport bounds (prevents "off screen")
-        const vpMinX = vp.left + EDGE_PAD;
-        const vpMaxX = vp.left + vp.width - btnRect.width - EDGE_PAD;
-        const vpMinY = vp.top + EDGE_PAD;
-        const vpMaxY = vp.top + vp.height - btnRect.height - EDGE_PAD;
-
-        // Intersect the card box with visible viewport
-        minX = clamp(minX, vpMinX, vpMaxX);
-        maxX = clamp(maxX, vpMinX, vpMaxX);
-        minY = clamp(minY, vpMinY, vpMaxY);
-        maxY = clamp(maxY, vpMinY, vpMaxY);
-
-        // If intersection collapses (rare), fallback to viewport-safe
-        if (maxX <= minX) { minX = vpMinX; maxX = vpMaxX; }
-        if (maxY <= minY) { minY = vpMinY; maxY = vpMaxY; }
-
-        const x = minX + Math.random() * (maxX - minX);
-        const y = minY + Math.random() * (maxY - minY);
+        const x = PAD + Math.random() * Math.max(0, maxX - PAD);
+        const y = PAD + Math.random() * Math.max(0, maxY - PAD);
 
         noBtn.style.left = `${x}px`;
         noBtn.style.top = `${y}px`;
+        noBtn.style.transform = "none";
       }
 
-      // ✅ Clean events: use pointer events (prevents touch+click double fire)
-      // Ignore multi-touch / two-finger gestures (prevents glitch)
+      // ✅ Use pointer events (clean on iOS), ignore multi-touch spam
       noBtn.addEventListener("pointerdown", (e) => {
-        if (e.pointerType === "touch" && e.isPrimary === false) return; // ignore extra fingers
+        if (e.pointerType === "touch" && e.isPrimary === false) return;
         e.preventDefault();
-        moveNo();
+        moveNoInsideCard();
       });
 
+      // Desktop hover makes it run too
       noBtn.addEventListener("pointerenter", (e) => {
-        // Only for mouse/trackpad hover on desktop
-        if (e.pointerType === "mouse") moveNo();
+        if (e.pointerType === "mouse") moveNoInsideCard();
       });
 
-      // Keep button visible on orientation change (no spasm)
+      // If orientation changes, keep it inside the card
       window.addEventListener("resize", () => {
-        if (noIsFloating) {
-          // Just nudge once (throttle already applies)
-          moveNo();
-        }
+        if (floating) moveNoInsideCard();
       });
 
       yesBtn.addEventListener("click", () => {
