@@ -25,7 +25,7 @@
       position: relative;
     }
 
-    /* Decorative floating hearts */
+    /* Floating hearts */
     .hearts {
       position: absolute;
       inset: 0;
@@ -38,44 +38,36 @@
       font-size: 18px;
       opacity: 0.18;
       animation: floatUp linear infinite;
-      filter: blur(0.1px);
     }
     @keyframes floatUp {
-      0%   { transform: translateY(110vh) translateX(0) rotate(0deg); opacity: 0; }
-      10%  { opacity: 0.18; }
-      90%  { opacity: 0.18; }
-      100% { transform: translateY(-20vh) translateX(40px) rotate(25deg); opacity: 0; }
+      0% { transform: translateY(110vh); opacity: 0; }
+      10% { opacity: 0.18; }
+      90% { opacity: 0.18; }
+      100% { transform: translateY(-20vh); opacity: 0; }
     }
 
-    /* Center card */
+    /* Card */
     .container {
       position: relative;
       z-index: 2;
-      background: rgba(255, 255, 255, 0.86);
+      background: rgba(255,255,255,0.9);
       border-radius: 22px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
-      padding: 34px 22px 28px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.14);
+      padding: 34px 22px 40px;
       text-align: center;
-      max-width: 460px;
+      max-width: 440px;
       width: 100%;
-      border: 1px solid rgba(214, 77, 121, 0.12);
-      backdrop-filter: blur(6px);
-      max-height: calc(100vh - 40px);
-      overflow: auto; /* allows gallery scroll on smaller phones */
-      -webkit-overflow-scrolling: touch;
     }
 
     h1 {
       font-size: 1.9rem;
       margin-bottom: 10px;
       color: #d64d79;
-      letter-spacing: 0.2px;
     }
 
     .sub {
-      color: rgba(214, 77, 121, 0.9);
+      color: rgba(214,77,121,0.9);
       margin-bottom: 22px;
-      font-size: 1.02rem;
     }
 
     .buttons {
@@ -84,7 +76,6 @@
       gap: 18px;
       align-items: center;
       position: relative;
-      margin-bottom: 10px;
     }
 
     button {
@@ -93,135 +84,60 @@
       border: none;
       border-radius: 999px;
       cursor: pointer;
-      transition: transform 0.15s ease, background-color 0.25s ease;
       min-width: 96px;
+      transition: transform 0.15s ease;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-      opacity: 1;
     }
+
     button:active { transform: scale(0.95); }
 
     .yes {
-      background-color: #ff6f91;
-      color: #fff;
-      box-shadow: 0 8px 18px rgba(255, 111, 145, 0.28);
+      background: #ff6f91;
+      color: white;
+      box-shadow: 0 8px 18px rgba(255,111,145,0.3);
     }
-    .yes:hover { background-color: #ff4f7d; }
 
-    /* No starts aligned next to Yes */
     .no {
-      background-color: #f6a6b2;
-      color: #fff;
-      box-shadow: 0 8px 18px rgba(246, 166, 178, 0.28);
-      position: relative;
+      background: #f6a6b2;
+      color: white;
+      box-shadow: 0 8px 18px rgba(246,166,178,0.3);
+      position: fixed;
       z-index: 3;
-      left: auto;
-      top: auto;
-      transform: none;
-      opacity: 1;
-    }
-    .no:hover { background-color: #f49bad; }
-
-    .sparkles {
-      margin-top: 12px;
-      font-size: 1.2rem;
-      opacity: 0.9;
     }
 
     .response {
-      margin-top: 18px;
-      font-size: 1.18rem;
+      margin-top: 26px;
+      font-size: 1.25rem;
       color: #d64d79;
-      font-weight: 650;
+      font-weight: 600;
       line-height: 1.5;
     }
 
-    /* Gallery (hidden until Yes) */
-    .hidden { display: none; }
-
-    .gallery-wrap {
-      margin-top: 16px;
-      animation: fadeIn 0.8s ease forwards;
-    }
-
-    .gallery-title {
-      margin: 10px 0 12px;
-      font-size: 1.05rem;
-      color: rgba(214, 77, 121, 0.95);
-      font-weight: 650;
-    }
-
     .gallery {
+      margin-top: 24px;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 12px;
     }
 
     .gallery img {
       width: 100%;
-      aspect-ratio: 1 / 1;        /* perfect for square/portrait-ish pics */
+      border-radius: 14px;
       object-fit: cover;
-      border-radius: 16px;
-      box-shadow: 0 10px 24px rgba(214, 77, 121, 0.22);
-      border: 1px solid rgba(214, 77, 121, 0.10);
-      cursor: pointer;
-      background: rgba(255,255,255,0.4);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Lightbox */
-    .lightbox {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.72);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-      z-index: 9999;
-    }
-    .lightbox.open { display: flex; }
-
-    .lightbox img {
-      max-width: min(92vw, 700px);
-      max-height: 86vh;
-      border-radius: 18px;
-      object-fit: contain;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.05);
-    }
-
-    .lightbox-hint {
-      position: absolute;
-      bottom: 16px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      color: rgba(255,255,255,0.85);
-      font-size: 0.95rem;
-    }
-
-    @media (min-width: 760px) {
-      .gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .container { max-width: 720px; }
-      .response { font-size: 1.22rem; }
+      aspect-ratio: 1 / 1;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.15);
     }
 
     @media (max-width: 480px) {
       h1 { font-size: 1.6rem; }
-      .sub { font-size: 0.98rem; }
-      button { padding: 12px 20px; font-size: 0.95rem; min-width: 92px; }
+      button { padding: 12px 20px; font-size: 0.95rem; }
     }
   </style>
 </head>
 
 <body>
-  <div class="hearts" aria-hidden="true" id="hearts"></div>
+  <div class="hearts" id="hearts"></div>
 
   <div class="container">
     <h1>Will you be my Valentine?</h1>
@@ -232,25 +148,13 @@
       <button id="noBtn" class="no">No</button>
     </div>
 
-    <div class="sparkles" aria-hidden="true">💖✨💘</div>
-    <div id="response" class="response" aria-live="polite"></div>
-
-    <!-- Hidden gallery revealed after Yes -->
-    <div id="galleryWrap" class="gallery-wrap hidden">
-      <div class="gallery-title">Us 💗</div>
-      <div class="gallery" id="photoGallery">
-        <img src="image1.jpg" alt="Us 1" loading="lazy" />
-        <img src="image2.jpg" alt="Us 2" loading="lazy" />
-        <img src="image3.jpg" alt="Us 3" loading="lazy" />
-        <img src="image4.jpg" alt="Us 4" loading="lazy" />
-      </div>
+    <div id="response" class="response"></div>
+    <div id="gallery" class="gallery" style="display:none;">
+      <img src="image1.jpg" alt="">
+      <img src="image2.jpg" alt="">
+      <img src="image3.jpg" alt="">
+      <img src="image4.jpg" alt="">
     </div>
-  </div>
-
-  <!-- Lightbox overlay -->
-  <div class="lightbox" id="lightbox" aria-hidden="true">
-    <img id="lightboxImg" alt="Photo" />
-    <div class="lightbox-hint">Tap anywhere to close</div>
   </div>
 
   <script>
@@ -258,113 +162,72 @@
       const yesBtn = document.getElementById("yesBtn");
       const noBtn = document.getElementById("noBtn");
       const response = document.getElementById("response");
+      const gallery = document.getElementById("gallery");
+      const card = document.querySelector(".container");
 
-      // --- Decorative hearts (lightweight + iPhone-friendly) ---
-      const heartsWrap = document.getElementById("hearts");
-      const heartEmojis = ["💗","💖","💘","💕","💓","❤️"];
-      const heartCount = 18;
+      let noIsFloating = false;
 
-      for (let i = 0; i < heartCount; i++) {
+      /* Hearts */
+      const hearts = document.getElementById("hearts");
+      const emojis = ["💖","💘","💕","💓","❤️"];
+      for (let i = 0; i < 18; i++) {
         const h = document.createElement("div");
         h.className = "heart";
-        h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
-        const left = Math.random() * 100;
-        const duration = 6 + Math.random() * 8;
-        const delay = Math.random() * 6;
-        const size = 14 + Math.random() * 18;
-        h.style.left = `${left}vw`;
-        h.style.animationDuration = `${duration}s`;
-        h.style.animationDelay = `${delay}s`;
-        h.style.fontSize = `${size}px`;
-        heartsWrap.appendChild(h);
+        h.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+        h.style.left = Math.random()*100 + "vw";
+        h.style.fontSize = 14 + Math.random()*18 + "px";
+        h.style.animationDuration = 6 + Math.random()*8 + "s";
+        h.style.animationDelay = Math.random()*6 + "s";
+        hearts.appendChild(h);
       }
-
-      // --- No button chase across entire viewport (never off-screen) ---
-      const SAFE_PAD = 18;
 
       function clamp(n, min, max) {
         return Math.max(min, Math.min(max, n));
       }
 
-      let noIsFloating = false;
-
       function moveNo() {
-        // Promote to fixed at the exact current location (no jump)
         if (!noIsFloating) {
-          const rect = noBtn.getBoundingClientRect();
-          noBtn.style.position = "fixed";
-          noBtn.style.left = `${rect.left}px`;
-          noBtn.style.top = `${rect.top}px`;
-          noBtn.style.transform = "none";
-          noBtn.style.opacity = "1";
+          const r = noBtn.getBoundingClientRect();
+          noBtn.style.left = r.left + "px";
+          noBtn.style.top = r.top + "px";
           noIsFloating = true;
         }
 
+        const cardRect = card.getBoundingClientRect();
         const btnRect = noBtn.getBoundingClientRect();
-        const maxX = window.innerWidth - btnRect.width - SAFE_PAD;
-        const maxY = window.innerHeight - btnRect.height - SAFE_PAD;
 
-        const x = SAFE_PAD + Math.random() * Math.max(0, maxX - SAFE_PAD);
-        const y = SAFE_PAD + Math.random() * Math.max(0, maxY - SAFE_PAD);
+        const PAD_X = 90;
+        const PAD_Y = 140;
+        const VIEW_PAD = 12;
 
-        noBtn.style.left = `${clamp(x, SAFE_PAD, maxX)}px`;
-        noBtn.style.top = `${clamp(y, SAFE_PAD, maxY)}px`;
+        let minX = cardRect.left - PAD_X;
+        let maxX = cardRect.right + PAD_X - btnRect.width;
+        let minY = cardRect.top - PAD_Y;
+        let maxY = cardRect.bottom + PAD_Y - btnRect.height;
+
+        minX = clamp(minX, VIEW_PAD, window.innerWidth - btnRect.width - VIEW_PAD);
+        maxX = clamp(maxX, VIEW_PAD, window.innerWidth - btnRect.width - VIEW_PAD);
+        minY = clamp(minY, VIEW_PAD, window.innerHeight - btnRect.height - VIEW_PAD);
+        maxY = clamp(maxY, VIEW_PAD, window.innerHeight - btnRect.height - VIEW_PAD);
+
+        const x = minX + Math.random() * (maxX - minX);
+        const y = minY + Math.random() * (maxY - minY);
+
+        noBtn.style.left = x + "px";
+        noBtn.style.top = y + "px";
       }
 
       noBtn.addEventListener("mouseover", moveNo);
-      noBtn.addEventListener(
-        "touchstart",
-        (e) => {
-          e.preventDefault();
-          moveNo();
-        },
-        { passive: false }
-      );
-      noBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        moveNo();
-      });
+      noBtn.addEventListener("click", (e) => { e.preventDefault(); moveNo(); });
+      noBtn.addEventListener("touchstart", (e) => { e.preventDefault(); moveNo(); }, { passive:false });
 
-      window.addEventListener("resize", () => {
-        if (noIsFloating) moveNo();
-      });
-
-      // --- Yes click: show message + gallery ---
       yesBtn.addEventListener("click", () => {
         response.innerHTML =
-          "Thank you very much for choosing yes, Khushnud!<br> I love you so much!<br><br>" +
+          "Thank you very much for choosing yes, Khushnud!<br>I love you so much!<br><br>" +
           "Join me for your favorite cuisine at 7:30 on Feb 14th… or I can bring it to you :)";
-
+        gallery.style.display = "grid";
         yesBtn.disabled = true;
         noBtn.style.display = "none";
-
-        document.getElementById("galleryWrap").classList.remove("hidden");
-      });
-
-      // --- Lightbox (tap to open/close) ---
-      const lightbox = document.getElementById("lightbox");
-      const lightboxImg = document.getElementById("lightboxImg");
-      const gallery = document.getElementById("photoGallery");
-
-      gallery.addEventListener("click", (e) => {
-        const target = e.target;
-        if (target && target.tagName === "IMG") {
-          lightboxImg.src = target.getAttribute("src");
-          lightbox.classList.add("open");
-          lightbox.setAttribute("aria-hidden", "false");
-        }
-      });
-
-      function closeLightbox() {
-        lightbox.classList.remove("open");
-        lightbox.setAttribute("aria-hidden", "true");
-        lightboxImg.src = "";
-      }
-
-      lightbox.addEventListener("click", closeLightbox);
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeLightbox();
       });
     });
   </script>
