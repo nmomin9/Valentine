@@ -11,7 +11,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       min-height: 100vh;
-      overflow: hidden; /* keep the chase clean */
+      overflow: hidden;
       background:
         radial-gradient(circle at 20% 10%, rgba(255,111,145,.35), transparent 40%),
         radial-gradient(circle at 80% 20%, rgba(246,166,178,.35), transparent 45%),
@@ -75,7 +75,6 @@
       font-size: 1.02rem;
     }
 
-    /* Buttons row (Yes only stays in card; No floats globally) */
     .buttons {
       display: flex;
       justify-content: center;
@@ -94,6 +93,7 @@
       min-width: 96px;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      opacity: 1; /* ensure no fading */
     }
     button:active { transform: scale(0.95); }
 
@@ -104,16 +104,17 @@
     }
     .yes:hover { background-color: #ff4f7d; }
 
-    /* The No button becomes a “runner” positioned against the viewport */
+    /* ✅ No starts aligned next to Yes */
     .no {
       background-color: #f6a6b2;
       color: #fff;
       box-shadow: 0 8px 18px rgba(246, 166, 178, 0.28);
-      position: fixed; /* key change: move across whole screen */
-      z-index: 3;       /* above card */
-      left: 50%;
-      top: 50%;
-      transform: translate(80px, 35px); /* start near the card */
+      position: relative; /* start in the flex row */
+      z-index: 3;
+      left: auto;
+      top: auto;
+      transform: none;
+      opacity: 1;
     }
     .no:hover { background-color: #f49bad; }
 
@@ -125,7 +126,6 @@
       line-height: 1.5;
     }
 
-    /* Tiny sparkle line */
     .sparkles {
       margin-top: 14px;
       font-size: 1.2rem;
@@ -149,7 +149,6 @@
 
     <div class="buttons">
       <button id="yesBtn" class="yes">Yes</button>
-      <!-- No button is still in DOM but will roam the whole viewport -->
       <button id="noBtn" class="no">No</button>
     </div>
 
@@ -173,9 +172,9 @@
         h.className = "heart";
         h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
         const left = Math.random() * 100;
-        const duration = 6 + Math.random() * 8;      // 6–14s
-        const delay = Math.random() * 6;             // 0–6s
-        const size = 14 + Math.random() * 18;        // 14–32px
+        const duration = 6 + Math.random() * 8;
+        const delay = Math.random() * 6;
+        const size = 14 + Math.random() * 18;
         h.style.left = `${left}vw`;
         h.style.animationDuration = `${duration}s`;
         h.style.animationDelay = `${delay}s`;
@@ -184,15 +183,27 @@
       }
 
       // --- No button movement across entire viewport (never off-screen) ---
-      const SAFE_PAD = 18; // keep away from edges (iPhone notch-ish safety)
+      const SAFE_PAD = 18;
 
       function clamp(n, min, max) {
         return Math.max(min, Math.min(max, n));
       }
 
-      function moveNo() {
-        const btnRect = noBtn.getBoundingClientRect();
+      let noIsFloating = false;
 
+      function moveNo() {
+        // ✅ On first interaction, promote to fixed at the exact current spot (no jump)
+        if (!noIsFloating) {
+          const rect = noBtn.getBoundingClientRect();
+          noBtn.style.position = "fixed";
+          noBtn.style.left = `${rect.left}px`;
+          noBtn.style.top = `${rect.top}px`;
+          noBtn.style.transform = "none";
+          noBtn.style.opacity = "1";
+          noIsFloating = true;
+        }
+
+        const btnRect = noBtn.getBoundingClientRect();
         const maxX = window.innerWidth - btnRect.width - SAFE_PAD;
         const maxY = window.innerHeight - btnRect.height - SAFE_PAD;
 
@@ -201,7 +212,6 @@
 
         noBtn.style.left = `${clamp(x, SAFE_PAD, maxX)}px`;
         noBtn.style.top = `${clamp(y, SAFE_PAD, maxY)}px`;
-        noBtn.style.transform = "none"; // once moving, don't translate
       }
 
       // Desktop hover
@@ -223,10 +233,9 @@
         moveNo();
       });
 
-      // If device rotates or resizes, keep No visible
+      // Keep it visible after orientation change / resize (only if already floating)
       window.addEventListener("resize", () => {
-        // nudge back into bounds after resize
-        moveNo();
+        if (noIsFloating) moveNo();
       });
 
       yesBtn.addEventListener("click", () => {
